@@ -55,6 +55,15 @@ class GraspNet(nn.Module):
         graspness_mask = graspness_score > GRASPNESS_THRESHOLD
         graspable_mask = objectness_mask & graspness_mask
 
+        if "point_clouds_sematic" in end_points:
+            if end_points["point_clouds_sematic"] is not None:
+                objectness_mask = end_points["point_clouds_sematic"][:, :, 0] > 0
+                graspable_mask = objectness_mask & graspness_mask
+
+        # fake true
+        if torch.sum(graspable_mask) == 0:
+            graspable_mask[:, 0] = True
+
         seed_features_graspable = []
         seed_xyz_graspable = []
         graspable_num_batch = 0.
