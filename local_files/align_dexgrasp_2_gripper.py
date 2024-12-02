@@ -9,14 +9,15 @@ from tora_hand_builder import ToraHandBuilder
 
 
 
-def debug_align_dexgrasp_2_gripper():
-    s_root = "/home/pxn-lyj/Egolee/programs/graspness_implementation_liyj/local_files/data/tmp"
+def debug_align_dexgrasp_2_gripper(hand_mesh_path=None):
+    s_root = "/home/pxn-lyj/Egolee/data/test/mesh_jz/graspness_infer_result"
 
-    pc_path = "/home/pxn-lyj/Egolee/programs/graspness_implementation_liyj/local_files/data/test_grippers/20_sematic.npy"
-    gp_path = "/home/pxn-lyj/Egolee/programs/graspness_implementation_liyj/local_files/data/test_grippers/20_sematic_gg.npy"
+    # pc_path = "/home/pxn-lyj/Egolee/programs/graspness_implementation_liyj/local_files/data/test_grippers/20_sematic.npy"
+    # gp_path = "/home/pxn-lyj/Egolee/programs/graspness_implementation_liyj/local_files/data/test_grippers/20_sematic_gg.npy"
+    gp_path = os.path.join(s_root, "00445_sematic_gg.npy")
     grasp_poses = np.load(gp_path)
     # 选择第一个作为调试的对象
-    grasp_poses = grasp_poses[1:2, ]
+    # grasp_poses = grasp_poses[1:2, ]
 
     gg = GraspGroup(grasp_poses)
     gg = gg.nms()
@@ -24,37 +25,53 @@ def debug_align_dexgrasp_2_gripper():
     if gg.__len__() > 30:
         gg = gg[:30]
     grippers = gg.to_open3d_geometry_list()
+    #
+    o3d.io.write_triangle_mesh(os.path.join(s_root, "grippers.obj"), grippers[17])
 
-    o3d.io.write_triangle_mesh(os.path.join(s_root, "grippers.obj"), grippers[0])
+    # for i in range(len(grasp_poses)):
+    for i in range(len(gg)):
+        if i!= 17:
+            continue
+        # 长度为17
+        # grasp_pose = grasp_poses[0]
+        grasp_pose = gg[i]
+        # scores [:,0]
+        # widths [:,1]
+        # heights [:,2]
+        # depths [:,3]
+        # rotation_matrices [:, 4:13]
+        # translations [:,13:16]
+        # object_ids [:,16]
 
-    # 长度为17
-    grasp_pose = grasp_poses[0]
-    # scores [:,0]
-    # widths [:,1]
-    # heights [:,2]
-    # depths [:,3]
-    # rotation_matrices [:, 4:13]
-    # translations [:,13:16]
-    # object_ids [:,16]
+        # scores = grasp_pose[0]
+        # widths = grasp_pose[1]
+        # heights = grasp_pose[2]
+        # depths = grasp_pose[3]
+        # rotation_matrices = grasp_pose[4:13]
+        # translations = grasp_pose[13:16]
+        # object_ids = grasp_pose[16]
 
-    scores = grasp_pose[0]
-    widths = grasp_pose[1]
-    heights = grasp_pose[2]
-    depths = grasp_pose[3]
-    rotation_matrices = grasp_pose[4:13]
-    translations = grasp_pose[13:16]
-    object_ids = grasp_pose[16]
-    print(scores, widths, heights, depths, rotation_matrices, translations, object_ids)
+        scores = grasp_pose.score
+        widths = grasp_pose.width
+        heights = grasp_pose.height
+        depths = grasp_pose.depth
+        rotation_matrices = grasp_pose.rotation_matrix
+        translations = grasp_pose.translation
+        object_ids = grasp_pose.object_id
+        print(scores, widths, heights, depths, rotation_matrices, translations, object_ids)
 
-    # 将dexhand对齐到场景中
-    hand_mesh_path = "/home/pxn-lyj/Egolee/programs/graspness_implementation_liyj/local_files/data/test_grippers/tora_hand.obj"
-    dex_hand_mesh = tm.load_mesh(hand_mesh_path, process=False)
+        # 将dexhand对齐到场景中
+        # hand_mesh_path = "/home/pxn-lyj/Egolee/programs/graspness_implementation_liyj/local_files/data/test_grippers/tora_hand.obj"
+        # hand_mesh_path = "/home/pxn-lyj/Egolee/data/tora_dethand/tora_hand_参数手势/20241014_0/tora_hand_R_90_180_0_-0.09_-0.08_0.04_0.0_0.0_0.0_0.0_0.0_0.0_0.0_0.0_0.0_90.0_0.0_15.0_0.0_90.0_15.0_15.0.obj"
+        if hand_mesh_path is None:
+            hand_mesh_path = "/home/pxn-lyj/Egolee/data/tora_dethand/tora_hand_参数手势/concact_map/tora_hand_R_90_180_0_-0.09_-0.08_0.04_0.0_90.0_15.0_15.0_0.0_90.0_15.0_15.0_0.0_90.0_15.0_15.0_0.0_90.0_30.0_30.0.obj"
+        dex_hand_mesh = tm.load_mesh(hand_mesh_path, process=False)
 
-
-    align_vertices = np.dot(rotation_matrices.reshape(3, 3), dex_hand_mesh.vertices.T).T + translations
-    dex_hand_mesh.vertices = align_vertices
-    dex_hand_mesh.export(os.path.join(s_root, "align_dex_hand.obj"))
-    # o3d.io.write_triangle_mesh(os.path.join(s_root, "align_dex_hand.obj"), dex_hand_mesh)
+        align_vertices = np.dot(rotation_matrices.reshape(3, 3), dex_hand_mesh.vertices.T).T + translations
+        dex_hand_mesh.vertices = align_vertices
+        # dex_hand_mesh.export(os.path.join(s_root, "align_dex_hand.obj"))
+        dex_hand_mesh.export(os.path.join(s_root, "align_dex_hand_{}.obj".format(i)))
+        # o3d.io.write_triangle_mesh(os.path.join(s_root, "align_dex_hand.obj"), dex_hand_mesh)
 
 
 def show_gripper_coordinate():
@@ -144,7 +161,7 @@ def show_tora_hand_mesh():
     # mzjdxz 调整为90度
 
     # hand_qpos_np[12] = 90  # 拇指
-    hand_qpos_np[13] = 90  # 拇指
+    hand_qpos_np[13] = 80  # 拇指
     # hand_qpos_np[14] = 15  # 拇指
     # hand_qpos_np[15] = 15  # 拇指
 
@@ -154,24 +171,24 @@ def show_tora_hand_mesh():
 
     # 无名指
     hand_qpos_np[0] = 0  # 左右
-    hand_qpos_np[1] = 0  # 里面那节
-    hand_qpos_np[2] = 0
-    hand_qpos_np[3] = 0
+    hand_qpos_np[1] = 80  # 里面那节
+    hand_qpos_np[2] = 5
+    hand_qpos_np[3] = 10
 
     # 中指
     hand_qpos_np[4] = 0  # 左右
-    hand_qpos_np[5] = 0  # 里面那节
-    hand_qpos_np[6] = 0
-    hand_qpos_np[7] = 0
+    hand_qpos_np[5] = 80  # 里面那节
+    hand_qpos_np[6] = 15
+    hand_qpos_np[7] = 15
 
     # 食指
     hand_qpos_np[8] = 0  # 左右
-    hand_qpos_np[9] = 90  # 里面那节
+    hand_qpos_np[9] = 75  # 里面那节
     # hand_qpos_np[10] = 0
     # hand_qpos_np[11] = 15
 
-    hand_qpos_np[10] = 22
-    hand_qpos_np[11] = 15
+    hand_qpos_np[10] = 30
+    hand_qpos_np[11] = 30
 
     hand_qpos = torch.from_numpy(np.deg2rad(hand_qpos_np).astype(np.float32))
 
@@ -189,8 +206,11 @@ def show_tora_hand_mesh():
     hand_mesh.visual.face_colors = [255, 255, 0, 255]
     params = [roll, pitch, yaw] + hand_translation.tolist() + hand_qpos_np.tolist()
     params_str = "_".join([str(round(param, 2)) for param in params])
-    s_root = "/home/pxn-lyj/Egolee/data/tora_dethand/tora_hand_参数手势/20241014_1"
-    hand_mesh.export(os.path.join(s_root, "tora_hand_R_" + params_str + ".obj"))
+    # s_root = "/home/pxn-lyj/Egolee/data/tora_dethand/tora_hand_参数手势/20241014_1"
+    s_root = "/home/pxn-lyj/Egolee/data/tora_dethand/tora_hand_参数手势/concact_map"
+    hand_mesh_path = os.path.join(s_root, "tora_hand_R_" + params_str + ".obj")
+    hand_mesh.export(hand_mesh_path)
+    return hand_mesh_path
 
 
 if __name__ == "__main__":
@@ -198,12 +218,12 @@ if __name__ == "__main__":
     # 通过mujoco-view可以观察到一些参数效果
     # python - m mujoco.viewer
 
-    # 将调整好参数的dexhand的mesh模型根据gripper的rt对齐到场景中
-    # debug_align_dexgrasp_2_gripper()
-
     # 得到gripper的坐标位置和在没有旋转平移情况下的mesh模型
     # show_gripper_coordinate()
 
     # 调整dexhand的参数与gripper的位姿关系，保存mesh模型
-    show_tora_hand_mesh()
+    hand_mesh_path = show_tora_hand_mesh()
+
+    # 将调整好参数的dexhand的mesh模型根据gripper的rt对齐到场景中
+    debug_align_dexgrasp_2_gripper(hand_mesh_path)
     print("End")

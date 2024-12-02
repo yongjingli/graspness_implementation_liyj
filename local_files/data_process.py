@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import trimesh as tm
 from PIL import Image
 from tqdm import tqdm
+import open3d as o3d
 
 
 def save_pcs_with_sematic():
@@ -309,6 +310,35 @@ def save_imgs_2_video():
     out.release()
 
 
+def get_object_concact_map():
+    obj_ply_path = "/home/pxn-lyj/Egolee/data/创新答辩_liyongjing/graspness_infer_result/obj_align_dex_grasp/concact_map/00445_align_6.ply"
+    obj_pc = o3d.io.read_point_cloud(obj_ply_path)
+    obj_pc = np.array(obj_pc.points)
+
+    hand_mesh_path = "/home/pxn-lyj/Egolee/data/创新答辩_liyongjing/graspness_infer_result/obj_align_dex_grasp/concact_map/align_dex_hand_17.obj"
+    hand_mesh = tm.load_mesh(hand_mesh_path)
+    hand_pc = hand_mesh.vertices
+
+
+    idxs = np.random.choice(len(hand_pc), min(max(int(len(hand_pc) / 4), 30000), len(hand_pc)), replace=False)
+    hand_pc = hand_pc[idxs]
+    d1 = np.min(np.linalg.norm(obj_pc[:, np.newaxis] - hand_pc, axis=2), axis=1)
+
+    normalized_d1 = (d1 - np.min(d1)) / (np.max(d1) - np.min(d1))
+
+    import matplotlib.cm as cm
+    cmap = cm.get_cmap('viridis')
+    colors = cmap(normalized_d1)
+    colors = (colors * 255).astype(np.uint8)[:, :3]
+    s_ply_path = obj_ply_path.replace(".ply", "_concact_map.ply")
+    save_2_ply(s_ply_path, obj_pc[:, 0], obj_pc[:, 1], obj_pc[:, 2], colors.tolist())
+
+
+    print("ff")
+
+
+
+
 if __name__ == "__main__":
     print("Start")
     # 采用numpy保存点云、rgb以及颜色信息
@@ -327,6 +357,8 @@ if __name__ == "__main__":
     # 将对齐后的object-mesh保存为_sematic
     # save_align_mesh_2_sematic()
 
-    save_imgs_2_video()
+    # save_imgs_2_video()
+
+    get_object_concact_map()
 
     print("End")

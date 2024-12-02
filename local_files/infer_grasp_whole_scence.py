@@ -173,9 +173,11 @@ def infer_grasp_whole_scence():
     grasp_pose_infer = GraspPoseInference(checkpoint_path, device=device, seed_feat_dim=512,
                                                       input_feature_dim=0, num_points=20000)
 
-    root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241009"
+    # root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241009"
     # root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241012_laser"
     # root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241012_no_laser"
+    # root = "/home/pxn-lyj/Egolee/data/test/mesh_jz"
+    root = "/home/pxn-lyj/Egolee/programs/splatter-image-liyj/local_files/tmp"
     point_clouds_root = os.path.join(root, "pcs_sematic")
     object_names = [name for name in os.listdir(point_clouds_root) if name.endswith(".npy") or name.endswith(".ply")]
     object_names = list(sorted(object_names, key=lambda x: int(x.split("_")[0])))
@@ -232,7 +234,8 @@ def infer_grasp_whole_scence():
 
         # sematics = None
         point_clouds_seg = sematics.astype(np.float32) if sematics is not None else None
-        point_clouds_sematic = (sematics == 1).astype(np.int64) if sematics is not None else None
+        # point_clouds_sematic = (sematics == 1).astype(np.int64) if sematics is not None else None  # select object id
+        point_clouds_sematic = (sematics > 0).astype(np.int64) if sematics is not None else None
         input_data = {'point_clouds': point_clouds.astype(np.float32),
                       'point_clouds_seg': point_clouds_seg,
                       'point_clouds_sematic': point_clouds_sematic,
@@ -258,17 +261,30 @@ def infer_grasp_whole_scence():
             collision_mask = mfcdetector.detect(gg, approach_dist=0.05, collision_thresh=collision_thresh)
             gg = gg[~collision_mask]
 
+        print("gg size:", len(gg))
         s_gg_path = os.path.join(s_root, object_name[:-4] + "_gg.npy")
         gg.save_npy(s_gg_path)
 
         s_pc_ply_path = os.path.join(s_root, object_name[:-4] + ".ply")
         save_2_ply(s_pc_ply_path, point_clouds[:, 0], point_clouds[:, 1], point_clouds[:, 2], colors.tolist() if colors is not None else colors)
+
+        gg = gg.nms()
+        gg = gg.sort_by_score()
+        if gg.__len__() > 30:
+            gg = gg[:30]
+        grippers = gg.to_open3d_geometry_list()
+        s_gripper_path = os.path.join(s_root, object_name[:-4] + "_grippers.obj")
+        merged_mesh = o3d.geometry.TriangleMesh()
+        for mesh in grippers:
+            merged_mesh += mesh
+        o3d.io.write_triangle_mesh(s_gripper_path, merged_mesh)
+
         #
         # # s_pc_ply_path = os.path.join(s_root, object_name[:-4] + "_object.ply")
         # # save_pts_2_ply(s_pc_ply_path, input_data['point_clouds'].astype(np.float32)[objectness_label != 0])
         #
-        s_pc_path = os.path.join(s_root, object_name[:-4] + ".npy")
-        np.save(s_pc_path, input_data['point_clouds'].astype(np.float32))
+        # s_pc_path = os.path.join(s_root, object_name[:-4] + ".npy")
+        # np.save(s_pc_path, input_data['point_clouds'].astype(np.float32))
         # exit(1)
 
 

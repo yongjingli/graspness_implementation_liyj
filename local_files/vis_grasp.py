@@ -11,9 +11,10 @@ from utils_data import get_align_dex_hand_mesh
 
 
 def vis_point_clouds_grasp_pose():
-    root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241009"
+    # root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241009"
     # root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241012_laser"
     # root = "/home/pxn-lyj/Egolee/data/test/dexgrasp_show_realsense_20241012_no_laser"
+    root = "/home/pxn-lyj/Egolee/data/test/mesh_jz"
 
     infer_result_root = os.path.join(root, "graspness_infer_result")
     grasp_names = [name for name in os.listdir(infer_result_root) if name.endswith("_gg.npy")]
@@ -57,8 +58,8 @@ def vis_point_clouds_grasp_pose():
 
         o3d.io.write_triangle_mesh(s_gripper_path, merged_mesh)
 
-        # o3d.visualization.draw_geometries([cloud, *grippers])
-        # o3d.visualization.draw_geometries([cloud])
+        o3d.visualization.draw_geometries([cloud, *grippers])
+        o3d.visualization.draw_geometries([cloud])
         exit(1)
 
 

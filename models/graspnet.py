@@ -73,6 +73,11 @@ class GraspNet(nn.Module):
             cur_feat = seed_features_flipped[i][cur_mask]  # Ns*feat_dim
             cur_seed_xyz = seed_xyz[i][cur_mask]  # Ns*3
 
+            # tmp
+            # objectness_seed_xyz = seed_xyz[i][objectness_mask[i]].cpu().numpy()
+            # np.save("/home/pxn-lyj/Egolee/data/创新答辩_liyongjing/objness_graspness/objectness_seed_xyz.npy", objectness_seed_xyz)
+            # np.save("/home/pxn-lyj/Egolee/data/创新答辩_liyongjing/objness_graspness/graspable_seed_xyz.npy", cur_seed_xyz.cpu().numpy())
+
             cur_seed_xyz = cur_seed_xyz.unsqueeze(0) # 1*Ns*3
             fps_idxs = furthest_point_sample(cur_seed_xyz, self.M_points)
             cur_seed_xyz_flipped = cur_seed_xyz.transpose(1, 2).contiguous()  # 1*3*Ns
